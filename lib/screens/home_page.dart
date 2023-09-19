@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:tablet_tabak/main.dart';
 import 'package:tablet_tabak/theme/colors/light_colors.dart';
 import 'package:http/http.dart' as http;
+import 'package:styled_widget/styled_widget.dart';
 
 class Order {
   final int id;
@@ -79,38 +80,64 @@ class OrderDataTable extends StatefulWidget {
 }
 
 class _OrderDataTableState extends State<OrderDataTable> {
+  bool sort = true;
   List<bool> selected = [];
   late List<TextEditingController> quantityControllers;
   late List<TextEditingController> remarkControllers;
   late TextEditingController searchController;
   List<Order> filteredOrders = [];
 
+  // Order Sorting
+  onsortColum(int columnIndex, bool ascending){
+    if(columnIndex == 0){
+      if(ascending){
+        filteredOrders!.sort((a,b) => a.productName!.compareTo(b.productName!));
+      }else{
+        filteredOrders!.sort((a,b) => b.productName!.compareTo(a.productName!));
+      }
+    }
+  }
+
+
   @override
   void initState() {
+    //filteredOrders = myData;
     super.initState();
+    TextEditingController controller = TextEditingController();
+
+    // İlgili öğelerin seçilip seçilmediğini takip etmek için bir liste oluşturuyoruz.
     selected = List<bool>.generate(widget.orders.length, (index) => false);
+    // Her sipariş için bir miktar denetleyici (TextEditingController) oluşturuyoruz ve varsayılan değerlerini ayarlıyoruz.
     quantityControllers = List.generate(
       widget.orders.length,
           (index) => TextEditingController(text: widget.orders[index].quantity.toString()),
     );
+    // Her sipariş için bir açıklama denetleyici (TextEditingController) oluşturuyoruz ve varsayılan değerlerini ayarlıyoruz.
     remarkControllers = List.generate(
       widget.orders.length,
           (index) => TextEditingController(text: widget.orders[index].remark ?? ''),
     );
+    // Arama işlevi için bir denetleyici oluşturuyoruz ve varsayılan sipariş listesini filtrelenmemiş sipariş listesine kopyalıyoruz.
     searchController = TextEditingController();
     filteredOrders = widget.orders;
   }
+
   @override
   void dispose() {
+    // Miktar denetleyicilerini (quantityControllers) temizliyoruz.
     for (final controller in quantityControllers) {
       controller.dispose();
     }
+    // Açıklama denetleyicilerini (remarkControllers) temizliyoruz.
     for (final controller in remarkControllers) {
       controller.dispose();
     }
+    // Arama denetleyicisini (searchController) temizliyoruz.
     searchController.dispose();
+    // Üst sınıfın dispose yöntemini çağırarak bellek sızıntısını önlemeye yardımcı oluyoruz.
     super.dispose();
   }
+
   void filterOrders(String query) {
     setState(() {
       filteredOrders = widget.orders.where((order) {
@@ -132,18 +159,6 @@ class _OrderDataTableState extends State<OrderDataTable> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(10.0),
-          child: Text(
-            'Bestellliste',
-            textAlign: TextAlign.left,
-            style: TextStyle(
-              fontSize: 14.0,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-        ),
-        Padding(
           padding: const EdgeInsets.all(8.0),
           child: TextField(
             controller: searchController,
@@ -160,6 +175,9 @@ class _OrderDataTableState extends State<OrderDataTable> {
           child: DataTable(
             columns: const <DataColumn>[
               DataColumn(
+                label: Text('Button'),
+              ),
+              DataColumn(
                 label: Text('Produktname'),
               ),
               DataColumn(
@@ -169,13 +187,13 @@ class _OrderDataTableState extends State<OrderDataTable> {
                 label: Text('Preise'),
               ),
               DataColumn(
-                label: Text('Produktnummer'),
-              ),
-              DataColumn(
                 label: Text('Anzahl'),
               ),
               DataColumn(
                 label: Text('Bemerkung'),
+              ),
+              DataColumn(
+                label: Text('Produktnummer'),
               ),
               DataColumn(
                 label: Text('Bestelldatum'),
@@ -185,6 +203,18 @@ class _OrderDataTableState extends State<OrderDataTable> {
               filteredOrders.length,
                   (index) => DataRow(
                   cells: <DataCell>[
+                    DataCell(
+                      ElevatedButton(
+                        onPressed: () {
+                          // Düğmeye tıklandığında modalı açmak için bir işlem yapın
+                          showModal(context, widget.orders[index]); // showModal fonksiyonu bir modal gösterir
+                        },
+                        style: ElevatedButton.styleFrom(
+                          primary: Colors.green,
+                        ),
+                        child:Icon(Icons.add_box_rounded),
+                      ),
+                    ),
                     DataCell(
                       SizedBox(
                         width: 150.0, // Genişlik ayarını burada kullanın
@@ -201,12 +231,6 @@ class _OrderDataTableState extends State<OrderDataTable> {
                       SizedBox(
                         width: 45.0, // Genişlik ayarını burada kullanın
                         child: Text(widget.orders[index].price),
-                      ),
-                    ),
-                    DataCell(
-                      SizedBox(
-                        width: 75.0, // Genişlik ayarını burada kullanın
-                        child: Text(widget.orders[index].productNumber),
                       ),
                     ),
                     DataCell(
@@ -236,6 +260,12 @@ class _OrderDataTableState extends State<OrderDataTable> {
                     DataCell(
                       SizedBox(
                         width: 75.0, // Genişlik ayarını burada kullanın
+                        child: Text(widget.orders[index].productNumber),
+                      ),
+                    ),
+                    DataCell(
+                      SizedBox(
+                        width: 75.0, // Genişlik ayarını burada kullanın
                         child: Text(widget.orders[index].orderDate),
                       ),
                     ),
@@ -253,7 +283,78 @@ class _OrderDataTableState extends State<OrderDataTable> {
       ],
     );
   }
+
 }
+
+// Ürünü Palet ekleme formu
+Widget _buildForm() {
+  return Table(
+    border: TableBorder.all(), // Tablo sınırlarını çizmek için
+    defaultColumnWidth: IntrinsicColumnWidth(), // Sütun genişliklerini ayarlamak için
+    children: [
+      TableRow(
+        children: [
+          TableCell(
+            child: Text('#', style: TextStyle(color: Colors.green, fontSize: 20)),
+          ),
+          TableCell(
+            child: Text('Lager', style: TextStyle(color: Colors.green, fontSize: 20)),
+          ),
+          TableCell(
+            child: Text('Palet', style: TextStyle(color: Colors.green, fontSize: 20)),
+          ),
+          TableCell(
+            child: Text('Notiz', style: TextStyle(color: Colors.green, fontSize: 20)),
+          ),
+          TableCell(
+            child: Text('Aktion', style: TextStyle(color: Colors.green, fontSize: 20)),
+          ),
+        ],
+      ),
+      TableRow(
+        children: [
+          TableCell(child: Text('1')), // #
+          TableCell(child: TextFormField()), // Notiz
+          TableCell(child: TextFormField()), // Notiz// @lang('content.pallets_title')
+          TableCell(child: TextFormField()), // Notiz
+          TableCell(
+            child: IconButton(
+              icon: Icon(Icons.remove), // Dash iconu kullanılmıştır, ilgili ikonu değiştirin
+              onPressed: () {
+                // Satırı kaldırmak için gerekli işlemi burada yapın
+              },
+            ),
+          ), // @lang('content.action')
+        ],
+      ),
+    ],
+  );
+}
+
+
+
+void showModal(BuildContext context, Order order) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    builder: (BuildContext context) {
+      return SingleChildScrollView(
+        child: Container(
+          padding: EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Produkte Details'),
+              _buildForm(),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
 class HomePage extends StatelessWidget {
   final _formKey = GlobalKey<FormState>();
   Future<List<Order>> fetchOrders() async {
@@ -581,7 +682,7 @@ class HomePage extends StatelessWidget {
                                         }
                                       }
                                     },
-                                    child: Text('Gönder'),
+                                    child: Text('Speichern'),
                                   ),
                                 ],
                               ),
