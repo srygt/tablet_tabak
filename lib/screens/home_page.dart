@@ -80,23 +80,17 @@ class OrderDataTable extends StatefulWidget {
 }
 
 class _OrderDataTableState extends State<OrderDataTable> {
-  bool sort = true;
   List<bool> selected = [];
   late List<TextEditingController> quantityControllers;
   late List<TextEditingController> remarkControllers;
   late TextEditingController searchController;
   List<Order> filteredOrders = [];
 
-  // Order Sorting
-  onsortColum(int columnIndex, bool ascending){
-    if(columnIndex == 0){
-      if(ascending){
-        filteredOrders!.sort((a,b) => a.productName!.compareTo(b.productName!));
-      }else{
-        filteredOrders!.sort((a,b) => b.productName!.compareTo(a.productName!));
-      }
-    }
-  }
+  late TextEditingController productIDController;
+  late TextEditingController productNameController;
+  late TextEditingController productNumberController;
+
+
 
 
   @override
@@ -104,7 +98,9 @@ class _OrderDataTableState extends State<OrderDataTable> {
     //filteredOrders = myData;
     super.initState();
     TextEditingController controller = TextEditingController();
-
+    productIDController = TextEditingController();
+    productNameController = TextEditingController();
+    productNumberController = TextEditingController();
     // İlgili öğelerin seçilip seçilmediğini takip etmek için bir liste oluşturuyoruz.
     selected = List<bool>.generate(widget.orders.length, (index) => false);
     // Her sipariş için bir miktar denetleyici (TextEditingController) oluşturuyoruz ve varsayılan değerlerini ayarlıyoruz.
@@ -135,6 +131,9 @@ class _OrderDataTableState extends State<OrderDataTable> {
     // Arama denetleyicisini (searchController) temizliyoruz.
     searchController.dispose();
     // Üst sınıfın dispose yöntemini çağırarak bellek sızıntısını önlemeye yardımcı oluyoruz.
+    productIDController.dispose();
+    productNameController.dispose();
+    productNumberController.dispose();
     super.dispose();
   }
 
@@ -215,18 +214,8 @@ class _OrderDataTableState extends State<OrderDataTable> {
                         child:Icon(Icons.add_box_rounded),
                       ),
                     ),
-                    DataCell(
-                      SizedBox(
-                        width: 150.0, // Genişlik ayarını burada kullanın
-                        child: Text(widget.orders[index].productName),
-                      ),
-                    ),
-                    DataCell(
-                      SizedBox(
-                      width: 45.0, // Genişlik ayarını burada kullanın
-                      child: Text(widget.orders[index].weight.toString()),
-                      ),
-                    ),
+                    DataCell(Text(filteredOrders[index].productName)),
+                    DataCell(Text(filteredOrders[index].weight.toString())),
                     DataCell(
                       SizedBox(
                         width: 45.0, // Genişlik ayarını burada kullanın
@@ -257,12 +246,7 @@ class _OrderDataTableState extends State<OrderDataTable> {
                         },
                       ),
                     ),
-                    DataCell(
-                      SizedBox(
-                        width: 75.0, // Genişlik ayarını burada kullanın
-                        child: Text(widget.orders[index].productNumber),
-                      ),
-                    ),
+                    DataCell(Text(filteredOrders[index].productNumber)),
                     DataCell(
                       SizedBox(
                         width: 75.0, // Genişlik ayarını burada kullanın
@@ -358,10 +342,10 @@ void showModal(BuildContext context, Order order) {
 class HomePage extends StatelessWidget {
   final _formKey = GlobalKey<FormState>();
   Future<List<Order>> fetchOrders() async {
-    final String apiUrl = 'https://app.tabak-welt.de/api/v1/order/list';
     final String token = MyApp.authToken ?? '19|eZVE9k5EdWxqsf74GDX0EnihU1vznUaiNPmK0emw'; // Bearer tokeni buraya ekleyin
-    final response = await http.get(
-      Uri.parse(apiUrl),
+// İsteği gönderin
+    final http.Response response = await http.get(
+      Uri.parse('https://app.tabak-welt.de/api/v1/order/list'),
       headers: {
         "Content-Type": "application/json",
         'Authorization': 'Bearer $token',
@@ -661,25 +645,45 @@ class HomePage extends StatelessWidget {
                                         _formKey.currentState?.save();
                                         // Verileri işlemek için bir metodu çağırabilirsiniz
                                         // Formdan alınan verileri bir Map'e dönüştürün
+                                        var productNameController = TextEditingController();
+                                        var productNumberController = TextEditingController();
+                                        var productIDController = TextEditingController();
                                         Map<String, dynamic> formData = {
-
+                                          'product_id': int.tryParse(productIDController.text) ?? 0,
+                                          'product_name': productNameController.text,
+                                          'product_number': productNumberController.text,
+                                          // Diğer alanları da ekleyebilirsiniz
                                         };
+                                        // Bekleme süresi
+                                        final int sleepTime = 3000; // 3 saniye
                                         // API'ye POST isteği yapın
                                         final apiUrl = 'https://app.tabak-welt.de/api/v1/order/store'; // API endpoint URL'nizi buraya ekleyin
-                                        final response = await http.post(
-                                          Uri.parse(apiUrl),
-                                          headers: {
-                                            'Content-Type': 'application/json', // Veri türünü JSON olarak belirtin
-                                          },
-                                          body: json.encode(formData), // Veriyi JSON formatına dönüştürün
-                                        );
-                                        if (response.statusCode == 200) {
-                                          // İşlem başarılı olduysa burada gerekli işlemleri yapabilirsiniz
-                                          print('Veri başarıyla gönderildi.');
-                                        } else {
-                                          // İşlem başarısız olduysa hata mesajını görüntüleyebilirsiniz
-                                          print('Veri gönderme hatası: ${response.statusCode}');
-                                        }
+                                          await Future.delayed(Duration(milliseconds: sleepTime), () async {
+                                          final response = await http.post(
+                                            Uri.parse(apiUrl),
+                                            headers: {
+                                              'Content-Type': 'application/json', // Veri türünü JSON olarak belirtin
+                                            },
+                                            body: json.encode(formData), // Veriyi JSON formatına dönüştürün
+                                          );
+                                          // Yönlendirmeyi ayıklayın
+                                          final locationHeader = response.headers['location'];
+                                          // Yeniden istekte bulun
+                                          final redirectedResponse = await http.post(
+                                            Uri.parse(locationHeader ?? ''), // Değer null ise boş bir String döndür
+                                            headers: {
+                                              'Content-Type': 'application/json', // Veri türünü JSON olarak belirtin
+                                            },
+                                            body: json.encode(formData), // Veriyi JSON formatına dönüştürün
+                                          ); // İsteğin sonucunu işleyin
+                                          if (redirectedResponse.statusCode == 200) {
+                                            // İşlem başarılı olduysa burada gerekli işlemleri yapabilirsiniz
+                                            print('Veri başarıyla gönderildi.');
+                                          } else {
+                                            // İşlem başarısız olduysa hata mesajını görüntüleyebilirsiniz
+                                            print('Veri gönderme hatası: ${redirectedResponse.statusCode}');
+                                          }
+                                        });
                                       }
                                     },
                                     child: Text('Speichern'),

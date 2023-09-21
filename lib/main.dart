@@ -17,11 +17,11 @@ class MyApp extends StatelessWidget {
   static const String _title = 'Tabak Welt App';
   static String? authToken; // Bearer tokeni saklamak için bir değişken
   static String? userName; // Na<me saklamak için bir değişken
-  static Future<bool> loginControl(String email, String password) async {
+  static Future<bool> loginControl(String username, String password) async {
     // API
     String apiUrl = "https://app.tabak-welt.de/api/v1/login";
     Map<String, String> loginInformation = {
-      "email": email,
+      "username": username,
       "password": password,
     };
 
@@ -69,7 +69,7 @@ class MyStatefulWidget extends StatefulWidget {
 }
 
 class _MyStatefulWidgetState extends State<MyStatefulWidget> {
-  TextEditingController emailControl = TextEditingController();
+  TextEditingController usernameControl = TextEditingController();
   TextEditingController passwordControl = TextEditingController();
 
   @override
@@ -113,7 +113,7 @@ class _MyStatefulWidgetState extends State<MyStatefulWidget> {
                           margin: const EdgeInsets.only(top: 12.0),
                           padding: const EdgeInsets.all(10),
                           child: TextField(
-                            controller: emailControl,
+                            controller: usernameControl,
                             decoration: const InputDecoration(
                               border: OutlineInputBorder(),
                               labelText: 'Kundenname',
@@ -141,10 +141,10 @@ class _MyStatefulWidgetState extends State<MyStatefulWidget> {
                             ),
                             child: const Text('Anmeldung'),
                             onPressed: () async {
-                              String email = emailControl.text;
+                              String username = usernameControl.text;
                               String password = passwordControl.text;
 
-                              bool loginResult = await MyApp.loginControl(email, password);
+                              bool loginResult = await MyApp.loginControl(username, password);
                               if (loginResult) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
