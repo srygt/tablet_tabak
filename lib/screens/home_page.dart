@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:tablet_tabak/main.dart';
 import 'package:tablet_tabak/theme/colors/light_colors.dart';
 import 'package:http/http.dart' as http;
-import 'package:styled_widget/styled_widget.dart';
+import 'package:tablet_tabak/screens/demands.dart';
+import 'package:tablet_tabak/screens/product.dart';
+import 'package:tablet_tabak/screens/report.dart';
+import 'package:tablet_tabak/screens/help.dart';
 
 class Order {
   final int id;
@@ -443,7 +446,14 @@ class HomePage extends StatelessWidget {
               title: Text('Einstellungen'),
             ),
             ListTile(
-              leading: Icon(Icons.help),
+              textColor: Colors.black54,
+              leading: IconButton(
+                color: Colors.red,
+                icon: Icon(Icons.help),
+                onPressed: (){
+                  Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => MyApp()), (route) => false,);
+                },
+              ),
               title: Text('Helfen'),
             ),
             ListTile(
