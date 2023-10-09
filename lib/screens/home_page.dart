@@ -451,7 +451,7 @@ class HomePage extends StatelessWidget {
                 color: Colors.red,
                 icon: Icon(Icons.help),
                 onPressed: (){
-                  Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => MyApp()), (route) => false,);
+                  Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => HelpPage()), (route) => false,);
                 },
               ),
               title: Text('Helfen'),
